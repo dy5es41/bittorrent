@@ -1,1 +1,3 @@
 *.swp
+*.torrent
+__pycache__

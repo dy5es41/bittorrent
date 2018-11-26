@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 
 import sys, os
-import requests, hexdump, struct
+import requests, struct
 import bencode, hashlib, json,collections
 from torrent import torrent
+from urllib.parse import urlencode
+from urllib.request import urlopen
+from hexdump import hexdump
+import socket
 
-def createinfo_hash(odict : collections.OrderedDict):
-	if 'info' in odict:
-		return hashlib.sha1(bencode.bencode(odict['info'])).hexdigest()
-	else:
-		sys.stderr.write('info not found in dict (invalid torrent file)')
-
-def createrequest(t : torrent)
-	
-	payload = {'info_hash': t.info_hash,
-								'peer_id' :
-
-	return
+CONNECT = 0
+ANNOUNCE = 1
+SCRAP = 2
+ERROR = 3
 
 
 if __name__ == '__main__':
-	torrent = torrent('sample.torrent')
-	print(torrent.info_hash)
+	torrent = torrent('venom.torrent')
+	print(torrent.host)
+	transaction_id, message  = torrent.generateheader(CONNECT)
+	hexdump(message)
+	
+	ip = socket.gethostbyname(torrent.host)
+	port = torrent.port
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	print((ip,port))
+	sock.sendto(message, (ip, port))
+	data, addr = sock.recvfrom(1024)
+	hexdump(data)
 

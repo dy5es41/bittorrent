@@ -2,41 +2,58 @@
 
 from hashlib import sha1
 from bencode import encode, decode
-import bencode
+from six.moves.urllib.parse import urlparse
+import bencode, random
+import struct
 
-CLIENT_NAME = "pythonnice"
+CLIENT_NAME = "python"
 CLIENT_ID = "PY"
 CLIENT_VERSION = "0001"
 
+CONNECT = 0
+ANNOUNCE = 1
+SCRAP = 2
+ERROR = 3
+
+DEFAULT_CONNECTION_ID = 0x41727101980
+
 class torrent():
-	def __init__(self, filename):
-		self.running = False
-		self.data = self.getmetainfo(filename) 
-		self.info_hash = sha1(encode(self.data['info'])).digest()
-		self.peer_id = generatepeerid() 
-		self.handshake = generatehandshake() 
-	
-	@classmethod
-	def getmetainfo(self, fname : str): 
-		try: 
-			with open(fname, 'rb') as fh: 
-				bstruct = bencode.bdecode(fh.read()) 
-				return bstruct 
-		except IOError as exception: print(exception)
+  def __init__(self, filename):
+    self.running = False
+    self.data = self.getmetainfo(filename) 
+    self.info_hash = sha1(encode(self.data['info'])).digest()
+    self.peer_id = self.generatepeerid() 
+    self.connection_id = DEFAULT_CONNECTION_ID
+    self.transaction = {}
+    self.timout = 2
+    self.handshake = self.generatehandshake() 
+    self.tracker_url = dict(self.getmetainfo(filename))['announce']
+    self.host, self.port = self.parseurl(self.data['announce'])
 
-	@classmethod
-	def generatepeerid(self):
+  def getmetainfo(self, fname : str): 
+    try: 
+      with open(fname, 'rb') as fh: 
+        bstruct = bencode.bdecode(fh.read()) 
+        return bstruct 
+    except IOError as exception: print(exception)
 
-		# As Azureus style seems most popular, we'll be using that.
-		# Generate a 12 character long string of random numbers.
-		random_string = ""
-		while len(random_string) != 12:
-			random_string = random_string + choice("1234567890")
-			return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
+  def generatepeerid(self):
+    random_string = ""
+    while len(random_string) != 12:
+      random_string = random_string + random.choice("1234567890")
+      return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
 
-	@classmethod
-	def generatehandshake(self,info_hash, peer_id):
-		protocol_id = "BitTorrent protocol"
-		len_id = str(len(protocol_id))
-		reserved = "00000000"
-		return len_id + protocol_id + reserved + info_hash + peer_id
+  def generatehandshake(self):
+    protocol_id = "BitTorrent protocol"
+    len_id = str(len(protocol_id))
+    reserved = "00000000"
+    return len_id + protocol_id + reserved + self.info_hash.hex() + self.peer_id
+
+  def generateheader(self, action):
+    transaction_id = random.randint(0, 1 << 32 - 1)
+    return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
+
+  def parseurl(self, url):
+    parsed = urlparse(url)
+    return parsed.hostname, parsed.port
+
