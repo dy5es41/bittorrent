@@ -3,7 +3,7 @@
 from hashlib import sha1
 from bencode import encode, decode
 from six.moves.urllib.parse import urlparse
-import bencode, random
+import bencode, random, math
 import struct, socket
 from hexdump import hexdump
 
@@ -25,7 +25,7 @@ class torrent():
 		self.info_hash = sha1(encode(self.data['info'])).digest()
 		self.peer_id = self.generatepeerid() 
 		self.connection_id = DEFAULT_CONNECTION_ID
-		self.transaction_id = 0
+		self.transaction_id = math.floor(random.random()*100000)
 		self.transaction = {}
 		self.timout = 2
 		self.handshake = self.generatehandshake() 
@@ -56,7 +56,7 @@ class torrent():
 	def generateheader(self, action):
 		transaction_id = random.randint(0, 1 << 32 - 1)
 		return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
-	
+
 	#will refactor to single struct.pack call
 	def generateannounce(self, action):
 		temp = struct.pack('!Q', self.connection_id)
@@ -93,7 +93,7 @@ class torrent():
 		return parsed.hostname, parsed.port
 
 	def unpackconnect(self, payload):
-		action, self.transaction_id, self.connection_id = struct.unpack('!LLQ', payload)
+		action, _, self.connection_id = struct.unpack('!LLQ', payload)
 		return action, self.transaction_id, self.connection_id
 
 """

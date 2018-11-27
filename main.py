@@ -18,18 +18,18 @@ if __name__ == '__main__':
 	torrent = torrent('venom.torrent')
 	payload = torrent.send(CONNECT)
 
+	print(*torrent.unpackconnect(payload))
 	
-	
-	#print(*torrent.unpackconnect(payload))
-	hexdump(torrent.generateannounce(ANNOUNCE))
-	message = torrent.generateannounce(ANNOUNCE)
 	IP = socket.gethostbyname(torrent.host)
 	PORT = torrent.port
-	
 	print(torrent.host, IP, PORT)
+	
+	message = torrent.generateannounce(ANNOUNCE)
+	hexdump(message)
+
 
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 	sock.sendto(message, (IP, PORT))
-	payload, addr = sock.recvfrom(1024)
+	payload, _ = sock.recvfrom(1024)
 	hexdump(payload)
 
