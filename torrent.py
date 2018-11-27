@@ -25,6 +25,7 @@ class torrent():
 		self.info_hash = sha1(encode(self.data['info'])).digest()
 		self.peer_id = self.generatepeerid() 
 		self.connection_id = DEFAULT_CONNECTION_ID
+		self.transaction_id = 0
 		self.transaction = {}
 		self.timout = 2
 		self.handshake = self.generatehandshake() 
@@ -42,8 +43,10 @@ class torrent():
 		random_string = ""
 		while len(random_string) != 12:
 			random_string = random_string + random.choice("1234567890")
-			return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
+		return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
 
+	def _generatepeerid(self):
+		return '-PC0001-' + ''.join([str(random.randint(0, 9)) for _ in range(12)])
 	def generatehandshake(self):
 		protocol_id = "BitTorrent protocol"
 		len_id = str(len(protocol_id))
@@ -53,6 +56,23 @@ class torrent():
 	def generateheader(self, action):
 		transaction_id = random.randint(0, 1 << 32 - 1)
 		return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
+	
+	#will refactor to single struct.pack call
+	def generateannounce(self, action):
+		temp = struct.pack('!Q', self.connection_id)
+		temp += struct.pack('!L', action)
+		temp += struct.pack('!L', self.transaction_id)
+		temp += struct.pack('!20s', self.peer_id.encode('utf8'))
+		temp += struct.pack('!Q', 0)
+		temp += struct.pack('!Q', 0)
+		temp += struct.pack('!Q', 0)
+		temp += struct.pack('!L', 0)
+		temp += struct.pack('!L', 0)
+		temp += struct.pack('!L', 0)
+		temp += struct.pack('!i', -1)
+		temp += struct.pack('!h', self.port)
+		return temp
+
 	def send(self, action):
 		 
 		IP = socket.gethostbyname(self.host)
@@ -68,9 +88,29 @@ class torrent():
 		hexdump(payload)
 		return payload
 
-	def recv(self, size):
-		return
-
 	def parseurl(self, url):
 		parsed = urlparse(url)
 		return parsed.hostname, parsed.port
+
+	def unpackconnect(self, payload):
+		action, self.transaction_id, self.connection_id = struct.unpack('!LLQ', payload)
+		return action, self.transaction_id, self.connection_id
+
+"""
+Offset	Size		Name		Value
+0				64-bit integer	connection_id
+8				32-bit integer	action					1 // announce
+12			32-bit integer	transaction_id
+16			20-byte string	info_hash
+36			20-byte string	peer_id
+56			64-bit integer	downloaded
+64			64-bit integer	left
+72			64-bit integer	uploaded
+80			32-bit integer	event						0 // 0: none; 1: completed; 2: started; 3: stopped
+84			32-bit integer	IP address			0 // default
+88			32-bit integer	key
+92			32-bit integer	num_want				-1 // default
+96			16-bit integer	port
+98
+
+"""

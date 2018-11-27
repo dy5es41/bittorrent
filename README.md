@@ -7,3 +7,5 @@ implements the bittorrent protocol
 - https://github.com/JosephSalisbury/python-bittorrent
 - https://github.com/sourcepirate/python-udptracker --> UDP tracker
 - http://www.bittorrent.org/beps/bep_0015.html --> UDP protocol
+- http://markuseliasson.se/article/bittorrent-in-python/ --> good article
+- https://allenkim67.github.io/programming/2016/05/04/how-to-make-your-own-bittorrent-client.html --> good blog
