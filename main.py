@@ -7,7 +7,7 @@ from torrent import torrent
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from hexdump import hexdump
-import socket
+import socket, requests
 
 CONNECT = 0
 ANNOUNCE = 1
@@ -16,17 +16,17 @@ ERROR = 3
 
 if __name__ == '__main__':
 	torrent = torrent('venom.torrent')
-	payload = torrent.send(CONNECT)
-
-	print(*torrent.unpackconnect(payload))
+	print(torrent.host, torrent.port)
 	
+	payload = torrent.send(CONNECT)
+	print(*torrent.unpackconnect(payload))
+
 	IP = socket.gethostbyname(torrent.host)
 	PORT = torrent.port
 	print(torrent.host, IP, PORT)
 	
 	message = torrent.generateannounce(ANNOUNCE)
 	hexdump(message)
-
 
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 	sock.sendto(message, (IP, PORT))

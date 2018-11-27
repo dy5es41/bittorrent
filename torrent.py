@@ -62,6 +62,7 @@ class torrent():
 		temp = struct.pack('!Q', self.connection_id)
 		temp += struct.pack('!L', action)
 		temp += struct.pack('!L', self.transaction_id)
+		temp += struct.pack('!20s', self.info_hash)
 		temp += struct.pack('!20s', self.peer_id.encode('utf8'))
 		temp += struct.pack('!Q', 0)
 		temp += struct.pack('!Q', 0)
