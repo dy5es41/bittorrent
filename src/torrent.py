@@ -20,7 +20,7 @@ ERROR = 3
 DEFAULT_CONNECTION_ID = 0x41727101980
 
 #handshake
-HANDSHAKE_PSTR_V1 = b"BitTorrent protocol"
+HANDSHAKE_PSTR_V1 = "BitTorrent protocol"
 
 
 
@@ -86,13 +86,16 @@ class torrent():
 		return temp
 
 
-#	def generatehandshake(self):
-#		temp = struct.pack('b',19)
-#		temp += struct.pack('19b', b'BitTorrent protocol')
-#		temp += struct.pack('20b', self.info_hash)
-#		temp += struct.pack('20b', self.peer_id)
-#		
-#		return
+	def generatehandshake(self):
+		
+		temp = chr(19)+\
+					 HANDSHAKE_PSTR_V1+\
+					'\x00'*8+\
+					self.info_hash.hex()+\
+					self.peer_id
+	
+		#reversal as network protocol
+		return bytes(temp, 'utf8')[::-1] 
 
 
 	def send(self, message: bytes, recvsize : int, name : str):

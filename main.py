@@ -34,5 +34,20 @@ if __name__ == '__main__':
 	
 	payload = torrent.send(torrent.generateannounce(ANNOUNCE), 2048, 'announce')
 	retdict = torrent.unpackannounce(payload)	
-	print(retdict)
+	
+	peer = retdict['peers'][11]
+	peerip = peer['addr']
+	peerport = peer['port']
+	print(peerip, peerport)
+
+	hexdumpwithname(torrent.generatehandshake(), 'handshake')
+	message = torrent.generatehandshake()
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((peerip, peerport))
+	s.send(message)
+	data = s.recv(2048)
+	hexdumpwithname(data, 'back')
+	s.close()
+
+
 
