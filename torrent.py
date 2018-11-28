@@ -5,6 +5,7 @@ from bencode import encode, decode
 from six.moves.urllib.parse import urlparse
 import sys, bencode, random, math
 import struct, socket
+from utilities import hexdumpwithname
 from hexdump import hexdump
 
 CLIENT_NAME = "python"
@@ -109,10 +110,14 @@ class torrent():
 
 		response = {}
 
-		info_struct = '!LLL'
+		info_struct = '!LLLLL'
 		info_size = struct.calcsize(info_struct)
 		info = payload[:info_size]
-		interval, leechers, seeders = struct.unpack(info_struct, info)
+		action, transaction_id, interval, leechers, seeders = struct.unpack(info_struct, info)
+		
+		#sanity check
+		assert sys.getsizeof(payload) > 20 #<=20 error response
+		assert self.transaction_id == transaction_id
 
 		peer_data = payload[info_size:]
 		peer_struct = '!LH'
@@ -125,29 +130,11 @@ class torrent():
 				peer = peer_data[off:off + peer_size]
 				addr, port = struct.unpack(peer_struct, peer)
 				peers.append({
-						'addr': socket.inet_ntoa(struct.pack('!L', addr)),
-						'port': port,
+					'addr': socket.inet_ntoa(struct.pack('!L', addr)),
+					'port': port,
 				})
 
 		return dict(interval=interval,
-								leechers=leechers,
-								seeders=seeders,
-								peers=peers)
-"""
-Offset	Size		Name		Value
-0				64-bit integer	connection_id
-8				32-bit integer	action					1 // announce
-12			32-bit integer	transaction_id
-16			20-byte string	info_hash
-36			20-byte string	peer_id
-56			64-bit integer	downloaded
-64			64-bit integer	left
-72			64-bit integer	uploaded
-80			32-bit integer	event						0 // 0: none; 1: completed; 2: started; 3: stopped
-84			32-bit integer	IP address			0 // default
-88			32-bit integer	key
-92			32-bit integer	num_want				-1 // default
-96			16-bit integer	port
-98
-
-"""
+			leechers=leechers,
+			seeders=seeders,
+			peers=peers)

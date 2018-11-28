@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 
-import sys, os
-import requests, struct
-import bencode, hashlib, json,collections
+import sys, os, requests, struct 
+import bencode, hashlib, json, collections
+
 from torrent import torrent
+from utilities import hexdumpwithname
+
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from hexdump import hexdump
 import socket, requests
+
+#pls enum
+NONE = 0
+COMPLETED = 1
+STARTED = 2
+STOPPED = 3
 
 CONNECT = 0
 ANNOUNCE = 1
@@ -27,3 +35,4 @@ if __name__ == '__main__':
 	payload = torrent.send(torrent.generateannounce(ANNOUNCE), 2048)
 	retdict = torrent.processannounce(payload)	
 	print(retdict)
+
