@@ -85,7 +85,6 @@ class torrent():
 		temp += self.peer_id.encode('utf8')
 		return temp
 
-
 	def send(self, message: bytes, recvsize : int, recvtimes: int, name : str, address, port, sockettype):
 		
 		printc((address, port), 'green')
@@ -96,11 +95,13 @@ class torrent():
 		sock.connect((address, port))
 		sock.send(message)
 
-		payload = b'\00'
+		payload = [] 
 		for i in  range(0,recvtimes):
-			payload, addr = sock.recvfrom(recvsize)
+			tempload, addr = sock.recvfrom(recvsize)
+			payload.append(tempload)
 
-		hexdumpwithname(payload, 'payload')
+		for pload in payload:
+			hexdumpwithname(pload, 'payload')
 
 		return payload
 	
@@ -149,3 +150,6 @@ class torrent():
 		peer_id = payload[48:68]
 		assert info_hash == self.info_hash
 		return info_hash, peer_id
+
+	def unpackbitfield(self, payload):
+		return
