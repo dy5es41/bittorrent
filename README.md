@@ -10,6 +10,9 @@ implements the bittorrent protocol
 - http://markuseliasson.se/article/bittorrent-in-python/
 - https://allenkim67.github.io/programming/2016/05/04/how-to-make-your-own-bittorrent-client.html
 - http://dandylife.net/docs/BitTorrent-Protocol.pdf
+- https://wiki.theory.org/index.php/BitTorrentSpecification#Messages
+- https://open.spotify.com/track/5J5oiQbDiGed52WKnU259b?si=qsIHmrZGR1Sh06tjn93mGQ
 ### problems
 - announce doesnt work -> announce packet needs info_hash
 - i dont really know how to structure this project, should i put all messages ina  a seperate messages.py or should i just split messages from main.py(client) and peer.py
+- handshake doesnt work -> handshake struct incorrect

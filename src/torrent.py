@@ -6,7 +6,7 @@ from six.moves.urllib.parse import urlparse
 import sys, bencode, random, math
 import struct, socket
 from hexdump import hexdump
-from src.utils import hexdumpwithname
+from src.utils import hexdumpwithname, printc
 CLIENT_NAME = "python"
 CLIENT_ID = "PY"
 CLIENT_VERSION = "0001"
@@ -20,9 +20,7 @@ ERROR = 3
 DEFAULT_CONNECTION_ID = 0x41727101980
 
 #handshake
-HANDSHAKE_PSTR_V1 = "BitTorrent protocol"
-
-
+HANDSHAKE_PSTR_V1 = 'BitTorrent protocol'
 
 class torrent():
 	def __init__(self, filename):
@@ -58,12 +56,6 @@ class torrent():
 			random_string = random_string + random.choice("1234567890")
 		return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
 
-	def generatehandshake(self):
-		protocol_id = "BitTorrent protocol"
-		len_id = str(len(protocol_id))
-		reserved = "00000000"
-		return len_id + protocol_id + reserved + self.info_hash.hex() + self.peer_id
-
 	def generateconnect(self, action):
 		transaction_id = random.randint(0, 1 << 32 - 1)
 		return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
@@ -85,42 +77,37 @@ class torrent():
 		temp += struct.pack('!h', self.port)
 		return temp
 
-
 	def generatehandshake(self):
-		
-		temp = chr(19)+\
-					 HANDSHAKE_PSTR_V1+\
-					'\x00'*8+\
-					self.info_hash.hex()+\
-					self.peer_id
-	
-		#reversal as network protocol
-		return bytes(temp, 'utf8')[::-1] 
+		temp = b'\x13'
+		temp += b'BitTorrent protocol'
+		temp += b'\x00'*8
+		temp += self.info_hash
+		temp += self.peer_id.encode('utf8')
+		return temp
 
 
-	def send(self, message: bytes, recvsize : int, name : str):
-		 
-		IP = socket.gethostbyname(self.host)
-		PORT = self.port
-		print((IP, PORT))
+	def send(self, message: bytes, recvsize : int, recvtimes: int, name : str, address, port, sockettype):
 		
+		printc((address, port), 'green')
+
 		hexdumpwithname(message, name)
 
-		#UDP
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
-		sock.sendto(message, (IP, PORT))
-		payload, addr = sock.recvfrom(recvsize)
+		sock = socket.socket(socket.AF_INET, sockettype)
+		sock.connect((address, port))
+		sock.send(message)
+
+		payload = b'\00'
+		for i in  range(0,recvtimes):
+			payload, addr = sock.recvfrom(recvsize)
 
 		hexdumpwithname(payload, 'payload')
 
 		return payload
-
-
+	
 	def unpackconnect(self, payload):
 		action, _, self.connection_id = struct.unpack('!LLQ', payload)
 		return action, self.transaction_id, self.connection_id
 	
-
 	def unpackannounce(self, payload):
 
 		response = {}
@@ -155,3 +142,10 @@ class torrent():
 			leechers=leechers,
 			seeders=seeders,
 			peers=peers)
+
+	def unpackhandshake(self, payload):
+		#not concerned about ptsr or protocol, just infohash and the peerid, no unpack lazy xd
+		info_hash = payload[28:48]
+		peer_id = payload[48:68]
+		assert info_hash == self.info_hash
+		return info_hash, peer_id
