@@ -3,8 +3,8 @@
 import sys, os, requests, struct 
 import bencode, hashlib, json, collections
 
-from torrent import torrent
-from utilities import hexdumpwithname
+from src.torrent import torrent
+from src.utils import hexdumpwithname
 
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -23,16 +23,16 @@ SCRAP = 2
 ERROR = 3
 
 if __name__ == '__main__':
-	torrent = torrent('venom.torrent')
+	torrent = torrent('sample/venom.torrent')
 	print(torrent.host, torrent.port)
 	
-	payload = torrent.send(torrent.generateconnect(CONNECT)[1], 1024)
+	payload = torrent.send(torrent.generateconnect(CONNECT)[1], 1024, 'connect')
 	torrent.unpackconnect(payload) #needed to set connection_id
 
 	IP, PORT = torrent.gethostipport()
 	print(torrent.host, IP, PORT)
 	
-	payload = torrent.send(torrent.generateannounce(ANNOUNCE), 2048)
-	retdict = torrent.processannounce(payload)	
+	payload = torrent.send(torrent.generateannounce(ANNOUNCE), 2048, 'announce')
+	retdict = torrent.unpackannounce(payload)	
 	print(retdict)
 

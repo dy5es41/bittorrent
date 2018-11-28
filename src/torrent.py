@@ -5,19 +5,22 @@ from bencode import encode, decode
 from six.moves.urllib.parse import urlparse
 import sys, bencode, random, math
 import struct, socket
-from utilities import hexdumpwithname
 from hexdump import hexdump
-
+from src.utils import hexdumpwithname
 CLIENT_NAME = "python"
 CLIENT_ID = "PY"
 CLIENT_VERSION = "0001"
 
+#events
 CONNECT = 0
 ANNOUNCE = 1
 SCRAP = 2
 ERROR = 3
 
 DEFAULT_CONNECTION_ID = 0x41727101980
+
+#handshake
+HANDSHAKE_PSTR_V1 = b"BitTorrent protocol"
 
 
 
@@ -42,14 +45,19 @@ class torrent():
 				return bstruct 
 		except IOError as exception: print(exception)
 
+	def gethostipport(self):
+		return socket.gethostbyname(self.host), self.port
+
+	def parseurl(self, url):
+		parsed = urlparse(url)
+		return parsed.hostname, parsed.port
+
 	def generatepeerid(self):
 		random_string = ""
 		while len(random_string) != 12:
 			random_string = random_string + random.choice("1234567890")
 		return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
 
-	def _generatepeerid(self):
-		return '-PC0001-' + ''.join([str(random.randint(0, 9)) for _ in range(12)])
 	def generatehandshake(self):
 		protocol_id = "BitTorrent protocol"
 		len_id = str(len(protocol_id))
@@ -76,37 +84,41 @@ class torrent():
 		temp += struct.pack('!i', -1)
 		temp += struct.pack('!h', self.port)
 		return temp
-	
-	def gethostipport(self):
-		return socket.gethostbyname(self.host), self.port
 
-	def send(self, message, recvsize):
+
+#	def generatehandshake(self):
+#		temp = struct.pack('b',19)
+#		temp += struct.pack('19b', b'BitTorrent protocol')
+#		temp += struct.pack('20b', self.info_hash)
+#		temp += struct.pack('20b', self.peer_id)
+#		
+#		return
+
+
+	def send(self, message: bytes, recvsize : int, name : str):
 		 
 		IP = socket.gethostbyname(self.host)
 		PORT = self.port
 		print((IP, PORT))
 		
-		hexdump(message)
+		hexdumpwithname(message, name)
 
 		#UDP
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 		sock.sendto(message, (IP, PORT))
 		payload, addr = sock.recvfrom(recvsize)
 
-		hexdump(payload)
+		hexdumpwithname(payload, 'payload')
 
 		return payload
 
-	def parseurl(self, url):
-		parsed = urlparse(url)
-		return parsed.hostname, parsed.port
 
 	def unpackconnect(self, payload):
 		action, _, self.connection_id = struct.unpack('!LLQ', payload)
 		return action, self.transaction_id, self.connection_id
 	
 
-	def processannounce(self, payload):
+	def unpackannounce(self, payload):
 
 		response = {}
 
@@ -134,7 +146,9 @@ class torrent():
 					'port': port,
 				})
 
-		return dict(interval=interval,
+		return dict(action=action,
+			transaction_id=transaction_id,
+			interval=interval,
 			leechers=leechers,
 			seeders=seeders,
 			peers=peers)
