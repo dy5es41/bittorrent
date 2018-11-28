@@ -3,7 +3,7 @@
 from hashlib import sha1
 from bencode import encode, decode
 from six.moves.urllib.parse import urlparse
-import bencode, random, math
+import sys, bencode, random, math
 import struct, socket
 from hexdump import hexdump
 
@@ -17,6 +17,8 @@ SCRAP = 2
 ERROR = 3
 
 DEFAULT_CONNECTION_ID = 0x41727101980
+
+
 
 class torrent():
 	def __init__(self, filename):
@@ -53,7 +55,7 @@ class torrent():
 		reserved = "00000000"
 		return len_id + protocol_id + reserved + self.info_hash.hex() + self.peer_id
 
-	def generateheader(self, action):
+	def generateconnect(self, action):
 		transaction_id = random.randint(0, 1 << 32 - 1)
 		return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
 
@@ -73,20 +75,25 @@ class torrent():
 		temp += struct.pack('!i', -1)
 		temp += struct.pack('!h', self.port)
 		return temp
+	
+	def gethostipport(self):
+		return socket.gethostbyname(self.host), self.port
 
-	def send(self, action):
+	def send(self, message, recvsize):
 		 
 		IP = socket.gethostbyname(self.host)
 		PORT = self.port
 		print((IP, PORT))
 		
-		_, message	= self.generateheader(action)
 		hexdump(message)
-	
+
+		#UDP
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 		sock.sendto(message, (IP, PORT))
-		payload, addr = sock.recvfrom(1024)
+		payload, addr = sock.recvfrom(recvsize)
+
 		hexdump(payload)
+
 		return payload
 
 	def parseurl(self, url):
@@ -96,7 +103,36 @@ class torrent():
 	def unpackconnect(self, payload):
 		action, _, self.connection_id = struct.unpack('!LLQ', payload)
 		return action, self.transaction_id, self.connection_id
+	
 
+	def processannounce(self, payload):
+
+		response = {}
+
+		info_struct = '!LLL'
+		info_size = struct.calcsize(info_struct)
+		info = payload[:info_size]
+		interval, leechers, seeders = struct.unpack(info_struct, info)
+
+		peer_data = payload[info_size:]
+		peer_struct = '!LH'
+		peer_size = struct.calcsize(peer_struct)
+		peer_count = len(peer_data) // peer_size
+		peers = []
+
+		for peer_offset in range(peer_count):
+				off = peer_size * peer_offset
+				peer = peer_data[off:off + peer_size]
+				addr, port = struct.unpack(peer_struct, peer)
+				peers.append({
+						'addr': socket.inet_ntoa(struct.pack('!L', addr)),
+						'port': port,
+				})
+
+		return dict(interval=interval,
+								leechers=leechers,
+								seeders=seeders,
+								peers=peers)
 """
 Offset	Size		Name		Value
 0				64-bit integer	connection_id

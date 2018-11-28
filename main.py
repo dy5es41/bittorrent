@@ -18,18 +18,12 @@ if __name__ == '__main__':
 	torrent = torrent('venom.torrent')
 	print(torrent.host, torrent.port)
 	
-	payload = torrent.send(CONNECT)
-	print(*torrent.unpackconnect(payload))
+	payload = torrent.send(torrent.generateconnect(CONNECT)[1], 1024)
+	torrent.unpackconnect(payload) #needed to set connection_id
 
-	IP = socket.gethostbyname(torrent.host)
-	PORT = torrent.port
+	IP, PORT = torrent.gethostipport()
 	print(torrent.host, IP, PORT)
 	
-	message = torrent.generateannounce(ANNOUNCE)
-	hexdump(message)
-
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
-	sock.sendto(message, (IP, PORT))
-	payload, _ = sock.recvfrom(1024)
-	hexdump(payload)
-
+	payload = torrent.send(torrent.generateannounce(ANNOUNCE), 2048)
+	retdict = torrent.processannounce(payload)	
+	print(retdict)
