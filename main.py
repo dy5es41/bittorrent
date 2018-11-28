@@ -2,9 +2,9 @@
 
 import sys, os, requests, struct, random
 import bencode, hashlib, json, collections
-
 from src.torrent import torrent
 from src.utils import hexdumpwithname, printc
+import src.messages as messages
 
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -24,7 +24,7 @@ ERROR = 3
 
 if __name__ == '__main__':
 	torrent = torrent('sample/venom.torrent')
-	print(torrent.host, torrent.port)
+	printc('tracker ' + str(torrent.host) + ' '+  str(torrent.port), 'blue')
 	
 	payload = torrent.send(torrent.generateconnect(CONNECT)[1], 1024, 1 , 'connect',\
 		socket.gethostbyname(torrent.host), torrent.port, socket.SOCK_DGRAM)
@@ -37,17 +37,39 @@ if __name__ == '__main__':
 		socket.gethostbyname(torrent.host), torrent.port, socket.SOCK_DGRAM)
 	retdict = torrent.unpackannounce(payload[0])	
 	
-	#peer = retdict['peers'][random.randint(0,90)]
-	peer = retdict['peers'][random.randint(0,retdict['seeders'])]
-	peerip = peer['addr']
-	peerport = peer['port']
 
 
 	#change amount of payload to 2 when you cna handle it correctly
 	# (handshake, pieces)
-	payload = torrent.send(torrent.generatehandshake(), 2048, 1 ,'handshake',\
-		peerip, peerport, socket.SOCK_STREAM)
-	_, peer_id = torrent.unpackhandshake(payload[0])
-	print(peer_id)
 
-	printc(payload[1],'yellow')
+	while True:
+		try:
+
+			#peer = retdict['peers'][random.randint(0,90)]
+			peer = retdict['peers'][random.randint(0,retdict['seeders'])]
+			peerip = peer['addr']
+			peerport = peer['port']
+
+			payload = torrent.send(torrent.generatehandshake(), 2048, 1 ,'handshake',\
+				peerip, peerport, socket.SOCK_STREAM)
+			_, peer_id = torrent.unpackhandshake(payload[0])
+			print(peer_id)
+	
+			#change to 2 when have pieces
+			#printc(payload[1],'yellow')
+			#print(sys.getsizeof(messages.generateunchoke()))
+			torrent.send(messages.generateinterested(), 50, 1, 'interested',\
+				peerip, peerport, socket.SOCK_STREAM)
+		except socket.timeout:
+			printc('timed out', 'red')
+			continue
+		except ConnectionRefusedError:
+			printc('connection refused', 'red')
+			continue
+		except OSError:
+			printc('unreachable?', 'red')
+			continue
+		except AssertionError:
+			printc('assertation error', red)
+			continue
+		break

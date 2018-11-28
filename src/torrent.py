@@ -92,6 +92,7 @@ class torrent():
 		hexdumpwithname(message, name)
 
 		sock = socket.socket(socket.AF_INET, sockettype)
+		sock.settimeout(3)
 		sock.connect((address, port))
 		sock.send(message)
 
