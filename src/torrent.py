@@ -92,12 +92,12 @@ class torrent():
 		hexdumpwithname(message, name)
 
 		sock = socket.socket(socket.AF_INET, sockettype)
-		sock.settimeout(3)
+		sock.settimeout(3.5)
 		sock.connect((address, port))
 		sock.send(message)
 
 		payload = [] 
-		for i in  range(0,recvtimes):
+		for i in	range(0,recvtimes):
 			tempload, addr = sock.recvfrom(recvsize)
 			payload.append(tempload)
 
