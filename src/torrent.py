@@ -7,15 +7,12 @@ import sys, bencode, random, math
 import struct, socket
 from hexdump import hexdump
 from src.utils import hexdumpwithname, printc
+
+
 CLIENT_NAME = "python"
 CLIENT_ID = "PY"
 CLIENT_VERSION = "0001"
 
-#events
-CONNECT = 0
-ANNOUNCE = 1
-SCRAP = 2
-ERROR = 3
 
 DEFAULT_CONNECTION_ID = 0x41727101980
 
@@ -98,7 +95,7 @@ class torrent():
 
 		payload = [] 
 		for i in	range(0,recvtimes):
-			tempload, addr = sock.recvfrom(recvsize)
+			tempload, addr = sock.recvfrom(recvsize[i])
 			payload.append(tempload)
 
 		for pload in payload:
