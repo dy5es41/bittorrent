@@ -1,0 +1,6 @@
+requests==2.18.4
+hexdump==3.3
+termcolor==1.1.0
+bencode.py==2.0.0
+six==1.11.0
+bencode==1.0

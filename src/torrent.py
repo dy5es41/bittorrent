@@ -8,15 +8,12 @@ import struct, socket
 from hexdump import hexdump
 from src.utils import hexdumpwithname, printc
 
-
 CLIENT_NAME = "python"
 CLIENT_ID = "PY"
 CLIENT_VERSION = "0001"
 
-
 DEFAULT_CONNECTION_ID = 0x41727101980
 
-#handshake
 HANDSHAKE_PSTR_V1 = 'BitTorrent protocol'
 
 class torrent():
@@ -82,14 +79,15 @@ class torrent():
 		temp += self.peer_id.encode('utf8')
 		return temp
 
-	def send(self, message: bytes, recvsize : int, recvtimes: int, name : str, address, port, sockettype):
+	def send(self, message: bytes, recvsize : int, recvtimes: int, name : str, address, port, sockettype,\
+    timout: int):
 		
 		printc((address, port), 'green')
 
 		hexdumpwithname(message, name)
 
 		sock = socket.socket(socket.AF_INET, sockettype)
-		sock.settimeout(3.5)
+		sock.settimeout(timout)
 		sock.connect((address, port))
 		sock.send(message)
 
