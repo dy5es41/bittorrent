@@ -20,3 +20,5 @@ implements the bittorrent protocol
 - i dont really know how to structure this project, should i put all messages ina  a seperate messages.py or should i just split messages from main.py(client) and peer.py
 - handshake doesnt work -> handshake struct incorrect
 - my unchoke message doesnt work
+- socket has been implemented into torrent class so that we are not constantly opening and closing it everytime we call send
+- send a recieve have been split

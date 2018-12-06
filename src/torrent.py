@@ -29,6 +29,7 @@ class torrent():
 		self.handshake = self.generatehandshake() 
 		self.tracker_url = dict(self.getmetainfo(filename))['announce']
 		self.host, self.port = self.parseurl(self.data['announce'])
+		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #defaults 
 
 	def getmetainfo(self, fname : str): 
 		try: 
@@ -79,26 +80,27 @@ class torrent():
 		temp += self.peer_id.encode('utf8')
 		return temp
 
-	def send(self, message: bytes, recvsize : int, recvtimes: int, name : str, address, port, sockettype,\
-    timout: int):
-		
-		printc((address, port), 'green')
 
+	#both send and revieve include a hexdump
+	def send(self, message: bytes,  name : str, address, port, sockettype,\
+		timout: int):
+		
+		#update socket type
+		if self.socket.type != sockettype:
+			self.socket = socket.socket(socket.AF_INET, sockettype)
+			
+		printc((address, port), 'green')
 		hexdumpwithname(message, name)
 
-		sock = socket.socket(socket.AF_INET, sockettype)
-		sock.settimeout(timout)
-		sock.connect((address, port))
-		sock.send(message)
+		self.socket.settimeout(timout)
 
-		payload = [] 
-		for i in	range(0,recvtimes):
-			tempload, addr = sock.recvfrom(recvsize[i])
-			payload.append(tempload)
-
-		for pload in payload:
-			hexdumpwithname(pload, 'payload')
-
+		self.socket.connect((address, port))
+		self.socket.send(message)
+		return
+	
+	def recv(self, size):
+		payload = self.socket.recv(size)
+		hexdumpwithname(payload, 'payload')
 		return payload
 	
 	def unpackconnect(self, payload):

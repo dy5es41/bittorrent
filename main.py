@@ -26,18 +26,19 @@ if __name__ == '__main__':
 	torrent_name = sys.argv[1] if len(sys.argv) > 1 else 'sample/solo.torrent'
 	torrent = torrent(torrent_name)
 	
-	#printc('tracker ' + str(torrent.host) + ' '+	str(torrent.port), 'blue')
-	
-	payload = torrent.send(torrent.generateconnect(CONNECT)[1], [1024], 1 , 'connect',\
+	torrent.send(torrent.generateconnect(CONNECT)[1],  'connect',\
 		socket.gethostbyname(torrent.host), torrent.port, socket.SOCK_DGRAM, 5)
-	torrent.unpackconnect(payload[0]) #needed to set connection_id
+	payload = torrent.recv(1024)
+	print(payload)
+	torrent.unpackconnect(payload) #needed to set connection_id
 
 	IP, PORT = torrent.gethostipport()
 	print(torrent.host, IP, PORT)
 	
-	payload = torrent.send(torrent.generateannounce(ANNOUNCE), [4096], 1 , 'announce',\
+	torrent.send(torrent.generateannounce(ANNOUNCE), 'announce',\
 		socket.gethostbyname(torrent.host), torrent.port, socket.SOCK_DGRAM, 10)
-	retdict = torrent.unpackannounce(payload[0])	
+	payload = torrent.recv(4096)
+	retdict = torrent.unpackannounce(payload)	
 	
 	while True:
 		try:
@@ -46,39 +47,17 @@ if __name__ == '__main__':
 			peerip = peer['addr']
 			peerport = peer['port']
 
-			#handshake and bitfield
-			payload = torrent.send(torrent.generatehandshake(), [68, 10**6], 2 ,'handshake',\
-				peerip, peerport, socket.SOCK_STREAM, 5)
-			_, peer_id = torrent.unpackhandshake(payload[0])
+			#handshake and idc about ur bitfield pal
+			torrent.send(torrent.generatehandshake(),'handshake',\
+				peerip, peerport, socket.SOCK_STREAM, 3)
+			payload = torrent.recv(68) 
+			_, peer_id = torrent.unpackhandshake(payload)
 			print(peer_id)
 
-			#torrent.send(messages.generatemessage(INTERESTED), [10**6], 1, 'interested',\
-			#	peerip, peerport, socket.SOCK_STREAM, 60)
+			torrent.send(messages.generatemessage(INTERESTED), 'interested',\
+				peerip, peerport, socket.SOCK_STREAM, 5)
+			torrent.recv(10**6)
 
-
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.settimeout(4)
-			sock.connect((peerip, peerport))
-
-			#handshake
-			handshake = torrent.generatehandshake()
-			hexdumpwithname(handshake, 'handshake')
-			sock.send(handshake)
-			handshake_hopefully = sock.recv(68)
-			hexdumpwithname(handshake_hopefully, 'recv handshake')
-			
-			#bitfield
-			payload = sock.recv(10**6)
-			hexdumpwithname(payload, 'bitfield')
-
-			#interested	
-			message = messages.generatemessage(INTERESTED)
-			hexdumpwithname(message, 'interested')
-			sock.send(message)
-			payload = sock.recv(10**6) #unchoke 
-			hexdumpwithname(payload, 'UNCHOKE')
-			#payload2 = sock.recv(10**6)
-			#hexdumpwithname(payload2, 'UNCHOKED????')
 			printc("MADE PEER", 'cyan')
 
 		except socket.timeout:
