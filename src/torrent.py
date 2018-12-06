@@ -29,7 +29,7 @@ class torrent():
 		self.handshake = self.generatehandshake() 
 		self.tracker_url = dict(self.getmetainfo(filename))['announce']
 		self.host, self.port = self.parseurl(self.data['announce'])
-		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #defaults 
+		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #defaults tcp 
 
 	def getmetainfo(self, fname : str): 
 		try: 
@@ -82,7 +82,7 @@ class torrent():
 
 
 	#both send and revieve include a hexdump
-	def send(self, message: bytes,  name : str, address, port, sockettype,\
+	def send(self, message: bytes,	name : str, address, port, sockettype,\
 		timout: int):
 		
 		#update socket type
@@ -150,4 +150,19 @@ class torrent():
 		return info_hash, peer_id
 
 	def unpackbitfield(self, payload):
-		return
+		
+		length = payload[0:4]
+		msgtype = payload[4:5]
+		payload = payload[5:]
+		
+		length = struct.unpack('>i',length)	
+		length = length[0] # tuple -> int 	
+		
+		#checks that we actually have a complete payload
+		#assert msgtype != b'\x05'
+		#assert length > sys.getsizeof(payload)
+		
+		arr = []
+		for i in range(0,(length-1)//4):
+			arr.append(payload[i])
+		return arr

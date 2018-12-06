@@ -12,7 +12,7 @@ def generatemessage(ACTION):
 	return struct.pack('!iB', 1, ACTION)
 
 def generatehave():
-  return struct.pack('!iBi',4, 4, 2 )
+  return struct.pack('!iBi',5, 4, 2 )
 
 __all__ = ['generatemessage']
 

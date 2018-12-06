@@ -53,12 +53,24 @@ if __name__ == '__main__':
 			payload = torrent.recv(68) 
 			_, peer_id = torrent.unpackhandshake(payload)
 			print(peer_id)
+			
+			#sometimes we dont recieve a full bitfield because peers are lazy
+			# int size (excluding this own size), byte msg type, payload!
+			bitfield = torrent.recv(10**6)
+			while struct.unpack('>i',bitfield[0:4])[0] > sys.getsizeof(bitfield[5:]):
+				bitfield += torrent.recv(10**6)
+
+			hexdumpwithname(bitfield, 'final bitfield')
+			peerpieces = torrent.unpackbitfield(bitfield)
+			print(peerpieces)
+			
+
 
 			torrent.send(messages.generatemessage(INTERESTED), 'interested',\
 				peerip, peerport, socket.SOCK_STREAM, 5)
 			torrent.recv(10**6)
 
-			printc("MADE PEER", 'cyan')
+			#printc("MADE PEER", 'cyan')
 
 		except socket.timeout:
 			printc('timed out', 'red')
@@ -69,7 +81,8 @@ if __name__ == '__main__':
 		except OSError:
 			printc('unreachable?', 'red')
 			continue
-		except AssertionError:
+		except AssertionError as e:
 			printc('assertation error', 'red')
+			print(e)
 			continue
 		break
