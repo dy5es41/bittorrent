@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 from hexdump import hexdump
 import socket, requests
+import asyncio
 
 CHOKE = 0
 UNCHOKE = 1
@@ -20,6 +21,7 @@ CONNECT = 0
 ANNOUNCE = 1
 SCRAP = 2
 ERROR = 3
+
 
 if __name__ == '__main__':
 	
@@ -42,18 +44,23 @@ if __name__ == '__main__':
 	
 	while True:
 		try:
-			
+
+
 			peer = retdict['peers'][random.randint(0,len(retdict['peers']))]
 			peerip = peer['addr']
 			peerport = peer['port']
 
-			#handshake and idc about ur bitfield pal
+			#torrent.send(messages.generatehandshakefast(torrent),'handshake',\
+			#	peerip, peerport, socket.SOCK_STREAM, 5)
 			torrent.send(torrent.generatehandshake(),'handshake',\
-				peerip, peerport, socket.SOCK_STREAM, 3)
-			payload = torrent.recv(68) 
+				peerip, peerport, socket.SOCK_STREAM, 5)
+			payload = torrent.recv(68)
+			#if sys.getsizeof(payload) == 0:
+			#	continue
+			#assert payload[27] == 4, 'not fast'
 			_, peer_id = torrent.unpackhandshake(payload)
 			print(peer_id)
-			
+
 			#sometimes we dont recieve a full bitfield because peers are lazy
 			# int size (excluding this own size), byte msg type, payload!
 			bitfield = torrent.recv(10**6)
@@ -64,13 +71,23 @@ if __name__ == '__main__':
 			peerpieces = torrent.unpackbitfield(bitfield)
 			print(peerpieces)
 			
+			status = 0 
+			while status != 8:
+				try:
+					torrent.send(messages.generatemessage(), 'interested',\
+						peerip, peerport, socket.SOCK_STREAM, 120)
+					payload = torrent.socket.recv(20)
+					hexdumpwithname(payload, 'unchoke')
+					if payload == b'':
+						continue
+				except socket.timeout:
+					print('timeout')
+					continue
 
-
-			torrent.send(messages.generatemessage(INTERESTED), 'interested',\
-				peerip, peerport, socket.SOCK_STREAM, 5)
-			torrent.recv(10**6)
-
-			#printc("MADE PEER", 'cyan')
+			printc("MADE PEER", 'cyan')
+			if payload == None:
+				print('dumb')
+				continue
 
 		except socket.timeout:
 			printc('timed out', 'red')

@@ -51,6 +51,8 @@ class torrent():
 			random_string = random_string + random.choice("1234567890")
 		return "-" + CLIENT_ID + CLIENT_VERSION + "-" + random_string
 
+  #messages
+
 	def generateconnect(self, action):
 		transaction_id = random.randint(0, 1 << 32 - 1)
 		return transaction_id, struct.pack('!QLL', self.connection_id, action, transaction_id)
@@ -63,7 +65,7 @@ class torrent():
 		temp += struct.pack('!20s', self.info_hash)
 		temp += struct.pack('!20s', self.peer_id.encode('utf8'))
 		temp += struct.pack('!Q', 0)
-		temp += struct.pack('!Q', 0)
+		temp += struct.pack('!Q', 10000)
 		temp += struct.pack('!Q', 0)
 		temp += struct.pack('!L', 0)
 		temp += struct.pack('!L', 0)
@@ -80,6 +82,7 @@ class torrent():
 		temp += self.peer_id.encode('utf8')
 		return temp
 
+  #send/recieve
 
 	#both send and revieve include a hexdump
 	def send(self, message: bytes,	name : str, address, port, sockettype,\
@@ -103,6 +106,8 @@ class torrent():
 		hexdumpwithname(payload, 'payload')
 		return payload
 	
+  #unpack
+
 	def unpackconnect(self, payload):
 		action, _, self.connection_id = struct.unpack('!LLQ', payload)
 		return action, self.transaction_id, self.connection_id
