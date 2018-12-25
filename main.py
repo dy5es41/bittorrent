@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, requests, struct, random
+import sys, os, requests, struct, random, time
 import bencode, hashlib, json, collections
 from src.torrent import torrent
 from src.utils import hexdumpwithname, printc
@@ -46,48 +46,46 @@ if __name__ == '__main__':
 		try:
 
 
-			peer = retdict['peers'][random.randint(0,len(retdict['peers']))]
+			peer = retdict['peers'][random.randint(0,180)]
+			#peer = retdict['peers'][random.randint(0,retdict['seeders'])]
 			peerip = peer['addr']
 			peerport = peer['port']
 
-			#torrent.send(messages.generatehandshakefast(torrent),'handshake',\
-			#	peerip, peerport, socket.SOCK_STREAM, 5)
-			torrent.send(torrent.generatehandshake(),'handshake',\
-				peerip, peerport, socket.SOCK_STREAM, 5)
-			payload = torrent.recv(68)
-			#if sys.getsizeof(payload) == 0:
-			#	continue
-			#assert payload[27] == 4, 'not fast'
-			_, peer_id = torrent.unpackhandshake(payload)
-			print(peer_id)
+			#payload = torrent.send(torrent.generatehandshake(), 68, 1 ,'handshake',\
+			#	peerip, peerport, socket.SOCK_STREAM)
+			#_, peer_id = torrent.unpackhandshake(payload[0])
+			#print(peer_id)
+	
+			#change to 2 when have pieces
+			#printc(payload[1],'yellow')
+			#print(sys.getsizeof(messages.generateunchoke()))
+			#torrent.send(messages.generateinterested(), 10**6, 1, 'interested',\
+			#	peerip, peerport, socket.SOCK_STREAM)
 
-			#sometimes we dont recieve a full bitfield because peers are lazy
-			# int size (excluding this own size), byte msg type, payload!
-			bitfield = torrent.recv(10**6)
-			while struct.unpack('>i',bitfield[0:4])[0] > sys.getsizeof(bitfield[5:]):
-				bitfield += torrent.recv(10**6)
 
-			hexdumpwithname(bitfield, 'final bitfield')
-			peerpieces = torrent.unpackbitfield(bitfield)
-			print(peerpieces)
+			handshake = torrent.generatehandshake()
+			hexdump(handshake)
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.settimeout(3)
+			sock.connect((peerip, peerport))
+
+			sock.send(handshake)
+			handshake_hopefully = sock.recv(68)
+			hexdump(handshake_hopefully)
+			# Todo: check that handshake back takes correct form
+			# self.receive_data() This should definitely not be happening on init.
 			
-			status = 0 
-			while status != 8:
-				try:
-					torrent.send(messages.generatemessage(), 'interested',\
-						peerip, peerport, socket.SOCK_STREAM, 120)
-					payload = torrent.socket.recv(20)
-					hexdumpwithname(payload, 'unchoke')
-					if payload == b'':
-						continue
-				except socket.timeout:
-					print('timeout')
-					continue
+			cur = messages.generatemessage()
+			hexdump(cur)
+			sock.send(cur)
+			payload = sock.recv(10**6)
+			payload2 = sock.recv(1024)
+			printc('MAKE PEER', 'yellow')
+			hexdump(payload)
+			
+			hexdump(payload2)
+			print("Made peer")
 
-			printc("MADE PEER", 'cyan')
-			if payload == None:
-				print('dumb')
-				continue
 
 		except socket.timeout:
 			printc('timed out', 'red')
