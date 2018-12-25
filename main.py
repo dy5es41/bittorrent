@@ -27,7 +27,7 @@ if __name__ == '__main__':
 	
 	torrent_name = sys.argv[1] if len(sys.argv) > 1 else 'sample/solo.torrent'
 	torrent = torrent(torrent_name)
-	
+
 	torrent.send(torrent.generateconnect(CONNECT)[1],  'connect',\
 		socket.gethostbyname(torrent.host), torrent.port, socket.SOCK_DGRAM, 5)
 	payload = torrent.recv(1024)
@@ -44,20 +44,13 @@ if __name__ == '__main__':
 	
 	while True:
 		try:
-
-
 			peer = retdict['peers'][random.randint(0,len(retdict['peers']))]
 			peerip = peer['addr']
 			peerport = peer['port']
 
-			#torrent.send(messages.generatehandshakefast(torrent),'handshake',\
-			#	peerip, peerport, socket.SOCK_STREAM, 5)
 			torrent.send(torrent.generatehandshake(),'handshake',\
 				peerip, peerport, socket.SOCK_STREAM, 5)
 			payload = torrent.recv(68)
-			#if sys.getsizeof(payload) == 0:
-			#	continue
-			#assert payload[27] == 4, 'not fast'
 			_, peer_id = torrent.unpackhandshake(payload)
 			print(peer_id)
 
@@ -72,7 +65,7 @@ if __name__ == '__main__':
 			print(peerpieces)
 			
 			status = 0 
-			while status != 8:
+			while status != 1:
 				try:
 					torrent.send(messages.generatemessage(), 'interested',\
 						peerip, peerport, socket.SOCK_STREAM, 120)
