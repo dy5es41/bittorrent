@@ -21,4 +21,3 @@ implements the bittorrent protocol
 - handshake doesnt work -> handshake struct incorrect
 - my unchoke message doesnt work
 - socket has been implemented into torrent class so that we are not constantly opening and closing it everytime we call send
-- send a recieve have been split
